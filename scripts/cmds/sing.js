@@ -7,11 +7,11 @@
 
 module.exports = {
   config: {
-    name: "sing",
-    author: "Samir Œ",
+    name: "play",
+    author: "keithkeizzah",
     description: "Search and download music from YouTube",
-    category: "song",
-    usage: "song [title]",
+    category: "play",
+    usage: "Download [title]",
     usePrefix: true,
     role: 0
 
@@ -22,7 +22,7 @@ module.exports = {
 
     try {
       if (!search) {
-        return bot.sendMessage(chatId, `Please provide a search query. Usage: /sing song name`);
+        return bot.sendMessage(chatId, `Please provide a search query. Usage: /play song name`);
       }
 
       bot.sendMessage(chatId, `🔍 Searching for song: ${search}`);
