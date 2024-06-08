@@ -1,7 +1,7 @@
 module.exports = {
     config: {
         name: "poll",
-        author: "Samir Œ",
+        author: "keithkeizzah",
         description: "Create a poll with multiple options",
         category: "utility",
         usage: "poll <question> | <option1> | <option2> | ...",
