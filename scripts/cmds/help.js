@@ -3,9 +3,9 @@ const path = require('path');
 
 module.exports = {
   config: {
-    name: 'menu',
+    name: 'help',
     description: 'Show available commands',
-    usage: '/menu [command_name]',
+    usage: '/help [command_name]',
     author: 'Samir OE',
     category: 'Utility',
     role: 0,
