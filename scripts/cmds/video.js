@@ -1,9 +1,7 @@
 const axios = require("axios");
 const fs = require("fs-extra");
-const ytdl = require("ytdl-core");
 const yts = require("yt-search");
 const path = require("path");
-const ID3Writer = require('node-id3');
 
 module.exports = {
   config: {
@@ -14,6 +12,7 @@ module.exports = {
     usage: "video [title]",
     usePrefix: true
   },
+  
   onStart: async ({ bot, chatId, args }) => {
     const searchTerm = args.join(" ");
 
@@ -38,30 +37,47 @@ module.exports = {
         console.log('[CACHE]', `File already downloaded. Using cached version: ${fileName}`);
         bot.sendVideo(chatId, fs.createReadStream(filePath), { caption: `${video.title}` });
       } else {
-        const fileWriteStream = fs.createWriteStream(filePath);
-        ytdl(videoUrl, { filter: 'audioandvideo' })
-          .on('error', (err) => {
-            console.error('Error downloading video:', err);
-            bot.sendMessage(chatId, 'An error occurred while downloading the video.');
-          })
-          .pipe(fileWriteStream);
+        // Replace ytdl-core with API call to api-dylux
+        const apiUrl = `https://api.dylux.xyz/api/youtube?url=${encodeURIComponent(videoUrl)}`;
 
-        fileWriteStream.on('finish', async () => {
-          fileWriteStream.end();
+        try {
+          const response = await axios.get(apiUrl);
 
-          const stats = fs.statSync(filePath);
-          if (stats.size > 100000000) { 
-            fs.unlinkSync(filePath);
-            return bot.sendMessage(chatId, '❌ The file could not be sent because it is larger than 55MB.');
+          if (response.data && response.data.status === 'success') {
+            const downloadUrl = response.data.result.url;  // Assuming the API returns the video download URL in `result.url`
+
+            const videoWriteStream = fs.createWriteStream(filePath);
+            const videoStream = await axios.get(downloadUrl, { responseType: 'stream' });
+
+            videoStream.data.pipe(videoWriteStream);
+
+            videoWriteStream.on('finish', () => {
+              const stats = fs.statSync(filePath);
+              if (stats.size > 100000000) { // 100MB size limit
+                fs.unlinkSync(filePath);
+                return bot.sendMessage(chatId, '❌ The file could not be sent because it is larger than 100MB.');
+              }
+
+              bot.sendVideo(chatId, fs.createReadStream(filePath), { caption: `${video.title}` });
+            });
+
+            videoWriteStream.on('error', (err) => {
+              console.error('[ERROR]', err);
+              bot.sendMessage(chatId, 'An error occurred while downloading the video.');
+            });
+          } else {
+            bot.sendMessage(chatId, '❌ Failed to fetch the video from the API.');
           }
-
-          bot.sendVideo(chatId, fs.createReadStream(filePath), { caption: `${video.title}` });
-        });
+        } catch (apiError) {
+          console.error('[API ERROR]', apiError);
+          bot.sendMessage(chatId, 'An error occurred while processing the video download.');
+        }
       }
     } catch (error) {
       console.error('[ERROR]', error);
       bot.sendMessage(chatId, 'An error occurred while processing the command.');
     }
+
     await bot.deleteMessage(chatId, searchMessage.message_id);
   }
 };
